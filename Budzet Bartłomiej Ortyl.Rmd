@@ -1,0 +1,214 @@
+---
+title: "WDAD Projekt Bartlomiej Ortyl"
+author: "Bartlomiej Ortyl"
+date: "30 01 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Wprowadzenie
+
+W moim projekcie badam zależnosci miedzy typem rodzin, liczba mieszkancow gospodarstw, regionem zamieszkania, a alkoholem. Postawilem 5 hipotez, ktore nastepnie sprawdzilem za pomoca jezyka R. Wybralem alkohol, poniewaz te wlasnie testy wydawaly mi sie najciekawsze do sprawdzenia oraz chcialem sprawdzic kulture picia w tym kraju oraz czy cos co sie moze wydawac jest faktycznie prawda.
+
+HIPOTEZY<br>
+H1: Grupa 1 rozni sie od grupy 2 wydatkami na alkohol<br>
+H2: Osoby samotne poniżej 35 lat wydaj wiecej na alkohol niż osoby samotne powyzej 35 lat <br>
+H3: W veneto, czyli w stolicy winiarstwa we wloszech wydaje sie wiecej na wino niz w innych regionach<br>
+H4: Im mniej osób w gospodarstwie domowym tym wiecej sie wydaje na alkohol(na 1 czlonka rodziny)<br>
+H5: Osoby, które wydaja wiecej niz srednia na alkohole luksusowe wydaje mniej na wino i piwo <br>
+
+## Przygotowanie danych do badania
+
+```{r}
+library(ggplot2)
+dane<-read.table("HBS_Microdati_Anno_2011.txt", header=T, sep="\t")
+dane1<-dane[, c("TIPFAM", "NC", "Regione", "C_1803", "C_1804", "C_1805")]
+```
+<br>Z surowych danych wyciagnalem tylko te ktore sa potrzebne do mojego projektu.
+
+## Opis bazy danych
+
+```{r}
+table(dane1$TIPFAM)
+```
+Jak widzimyw naszej bazie nie ma typu rodzin z numerem 2 czyli osob samotnych w wieku 35-64 lat, oraz nie ma typu numer 5 czyli Par bez dzieci z osobą kontaktową w wieku 35-64 la, nie ma rowniez numeru 9 czyli para z 3 i więcej dziećmi.
+
+```{r}
+table(dane1$NC)
+```
+W powyższej tabeli widzimy, rozklad ilosci mieszkancow na jedno gospodarstwo domowe, mozemy zauwazyc, że najwiecej jest gospodarstw z 2 osobami.
+
+```{r}
+table(dane1$Regione)
+```
+Powyzej przedstawiona jest tabela regionow we wloszech i ilosci mieszkancow w kazdym z nich, najwiecej badanych pochodzi z Lombardii.
+
+```{r}
+ggplot(dane1, aes(x=C_1803))+geom_histogram(binwidth=5)
+```
+Powyzszy historam przedstawia wydatki na wino z badanych gospodarstw, mozemy latwo zauwazyc ze wiekszosc gospodarstw nie wydaje nic na wino.
+
+```{r}
+ggplot(dane1, aes(x=C_1804))+geom_histogram(binwidth=5)
+```
+Powyzszy historam przedstawia wydatki na piwo z badanych gospodarstw, mozemy latwo zauwazyc ze wiekszosc gospodarstw nie wydaje nic na piwo.
+
+```{r}
+ggplot(dane1, aes(x=C_1805))+geom_histogram(binwidth=5)
+```
+Powyzszy historam przedstawia wydatki na Likiery, szampan i aperitify alkoholowe z badanych gospodarstw, mozemy latwo zauwazyc ze wiekszosc gospodarstw nie wydaje nic na Likiery, szampan i aperitify alkoholowe.
+
+```{r}
+summary(dane1$C_1803)
+```
+Srednie wydatki na wino to 11.67.
+
+```{r}
+summary(dane1$C_1804)
+```
+Srednie wydatki na piwo to 5.528.
+
+```{r}
+summary(dane1$C_1805)
+```
+Srednie wydatki na Likiery, szampan i aperitify alkoholowe to 3.623.
+
+
+# Hipotezy
+
+## HIPOTEZA 1
+## Pary bez dzieci wydaja wiecej na alkohol niz pary z dziecmi
+```{r}
+dane1$grupa<-NA
+dane1$grupa[dane1$TIPFAM=="4"] <-0
+dane1$grupa[dane1$TIPFAM=="6"] <-0
+dane1$grupa[dane1$TIPFAM=="7"] <-1
+dane1$grupa[dane1$TIPFAM=="8"] <-1
+dane1$sumaalkohol<-dane1$C_1803+dane1$C_1804+dane1$C_1805
+```
+Tworze nowa zmienna dzielaca grupy z dziecmi od grup bez dzieci, przypisujac im 0(bez dzieci) lub 1(z dziecmi). <br>
+Nastepnie tworze kolejna zmienna sumaalkohol aby zsumowac wszystkie wydatki na alkohol dla kazdego gospodarstwa.
+
+```{r}
+mean(dane1$sumaalkohol[dane1$grupa=="0"], na.rm=TRUE)
+mean(dane1$sumaalkohol[dane1$grupa=="1"], na.rm=TRUE)
+
+```
+
+Jak widzimy srednie dla obydwu grup sa bardzo zblizone, ale z minimalnymi wiekszymi wydatkami grupy bez dzieci co potwierdza moja hipoteze.<br>
+Sprawdze jeszcze srednie dla kazdego rodzaju badanego alkoholu odzielnie.
+```{r}
+mean(dane1$C_1803[dane1$grupa=="0"], na.rm=TRUE)
+mean(dane1$C_1803[dane1$grupa=="1"], na.rm=TRUE)
+```
+Jak widac grupa bez dzieci wydaje wiecej na wino.
+```{r}
+mean(dane1$C_1804[dane1$grupa=="0"], na.rm=TRUE)
+mean(dane1$C_1804[dane1$grupa=="1"], na.rm=TRUE)
+```
+Natomiast grupa z dziecmi wydaje wiecej na piwo.
+```{r}
+mean(dane1$C_1805[dane1$grupa=="0"], na.rm=TRUE)
+mean(dane1$C_1805[dane1$grupa=="1"], na.rm=TRUE)
+```
+Grupa z dziecmi wydaje rowniez nieco wiecej na alkohole luksusowe.
+
+## HIPOTEZA 2
+## Osoby samotne poniżej 35 lat wydaj wiecej na alkohol niż osoby samotne powyzej 35 lat
+
+```{r}
+mean(dane1$sumaalkohol[dane1$TIPFAM=="1"], na.rm=TRUE)
+mean(dane1$sumaalkohol[dane1$TIPFAM=="3"], na.rm=TRUE)
+```
+Jako ze w mojej bazie nie ma typu rodziny 2, czyli osoba samotna w wieku 35-64 lat, to uwzgledniam tylko grupy 1 oraz 3 i licze ich srednie wydatki na alkohol.<br>
+Srednie potwierdzaja moja hipoteze, osoby samotne ponizej 35 lat wydaja wiecej na alkohol.<br>
+
+Ponizej porownuje rowniez te 2 grupy na osobnych rodzajach alkoholu.
+
+```{r}
+mean(dane1$C_1803[dane1$TIPFAM=="1"], na.rm=TRUE)
+mean(dane1$C_1803[dane1$TIPFAM=="3"], na.rm=TRUE)
+```
+Mlodsze osoby samotne wydaja wiecej na wino.
+
+```{r}
+mean(dane1$C_1804[dane1$TIPFAM=="1"], na.rm=TRUE)
+mean(dane1$C_1804[dane1$TIPFAM=="3"], na.rm=TRUE)
+```
+Samotne osoby ponizej 35 lat wydaja niemal 3 krotnie wiecej na piwo !
+
+```{r}
+mean(dane1$C_1805[dane1$TIPFAM=="1"], na.rm=TRUE)
+mean(dane1$C_1805[dane1$TIPFAM=="3"], na.rm=TRUE)
+```
+Jak mozna sie bylo spodziewac alkohole luksusowe rowniez czesciej goszcza u osob samotnych mlodszych.
+
+
+## HIPOTEZA 3 
+## W veneto, czyli w stolicy winiarstwa we wloszech wydaje sie wiecej na wino niz w innych regionach
+
+```{r}
+srednie_wino<-aggregate(dane1$C_1803, by=list(dane1$Regione), FUN=mean)
+srednie_wino
+```
+Wyliczam srednie wydatki na wino w kazdym badanym regionie. <br>
+Okazalo sie ze Veneto mimo ze jest w czolowce to nie wydaje sie tam najwiecej na wino. Nie potwierdza to mojej hipotezy.<br>
+
+Najwiecej czerwonego trunku przelewa sie w Piemont i Valle d'Aosta.<br>
+Ponizszy wykres przedstawia wydatki dla kazdego regionu po kolei.
+
+```{r}
+
+ggplot(srednie_wino, aes(x=Group.1, y=x))+geom_col()
+```
+
+
+
+## HIPOTEZA 4
+## Im mniej osób w gospodarstwie domowym tym wiecej sie wydaje na najbardziej przystepny alkohol we wloszech czyli wino(na 1 czlonka rodziny)
+
+```{r}
+srednie_wino_NC<-aggregate(dane1$C_1803, by=list(dane1$NC), FUN=mean)
+srednie_wino_NC
+ggplot(srednie_wino_NC, aes(x=Group.1, y=x))+geom_col()
+```
+<br>Srednie oraz wykres zaprzeczaja mojej hipotezie.<br>
+
+```{r}
+dane1$wino<-ifelse(dane1$C_1803>11.67, 1, 0)
+regresja1<-glm(dane1$wino~dane1$NC, family="binomial")
+summary(regresja1)
+```
+Tworze nowa zmienna dane1$wino i za pomoca ifelse dziele ja na 2 grupy, wyzsze od srednich wydatkow lub nizsze(1 - to duzy wynik, 0 - to maly wynik).<br>
+
+```{r}
+
+exp(regresja1$coefficients)
+```
+
+Uzywajac regresji logistycznej wyszedl nam jeden wspolczynnik(wiekszy niz 1) ktory mowi ze im wiecej osob w gospodarstwie, tym wieksza szansa na duze wydatki na wino. <br>
+Zaprzecza to mojej hipotezie .<br>
+
+
+
+## HIPOTEZA 5
+## Osoby, które wydaja wiecej niz srednia na alkohole luksusowe wydaje mniej na wino i piwo
+```{r}
+cor.test(dane1$C_1803, dane1$C_1805)
+ggplot(dane1, aes(y=C_1803, x=C_1805))+geom_point()
+cor.test(dane1$C_1804, dane1$C_1805)
+ggplot(dane1, aes(y=C_1804, x=C_1805))+geom_point()
+```
+<br>Utworzylem korelacje, ktora pokazala ze dla wina i piwa wspolczynniki korelacji(0.09782382, 0.08545626) wyszly dodatnie, czyli jesli wydajemy wiecej na alkohole luksusowe, wydajemy rowniez wiecej na inne alkohole co zaprzecza mojej hipotezie.
+p < 0,05 - istotny zwiazek, ale dodatni, nie ujemny - czyli im wyzsze wydatki na wino i piwo, tym wieksze na likiery.
+
+
+## PODSUMOWANIE 
+
+Podsumowujac, wedlug mnie we Wloszech nie ma zbyt wielu regul ani stereotypow jesli chodzi o picie alkoholu. Wedlug mnie kazdy pije tam jak chce i ile chce co jest piekne. Ciezko dopatrzec sie jakis wiekszych zaleznosci albo wyszukac niesamowitych korelacji.<br> Hipoteza numer 1 i 2 zostaly przezemnie potwierdzone, natomiast hipotezy 3,4,5 zostaly zaprzeczone.<br>
+Wlochy to piekny kraj bedaca w swiatowej czolowce jesli chodzi o wino. Kazdy kto tam przyjezdza musi sprobowac ich lokalnych trunkow. Sam osobiscie bylem we Wloszech raz i byly to niezapomniane wakacje, ktore kazdemu moge szczerze polecic.
